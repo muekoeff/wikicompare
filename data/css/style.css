@@ -1,0 +1,78 @@
+textarea {
+	width: 100%;
+}
+.container {
+	margin-bottom:1.5em;
+	margin-top:1.5em
+}
+.modal-dialog {
+	max-width: 85%;
+}
+.reference-item {
+	background-color: #fff8e1 !important;
+}
+.state-undefined {
+	background-color: rgba(255,0,0,.3);
+}
+.state-undefined::after {
+	content: "Undefined";
+	font-style: italic;
+}
+.tooltipster-sidetip.tooltipster-error.tooltipster-left .tooltipster-arrow-background {
+	border-left-color: #f8d7da !important;
+}
+.tooltipster-sidetip.tooltipster-light.tooltipster-left .tooltipster-arrow-border {
+	border-left-color: #f5c6cb !important;
+}
+.tooltipster-sidetip.tooltipster-error .tooltipster-box {
+	background-color: #f8d7da !important;
+	border-color: #f5c6cb !important;
+}
+.tooltipster-sidetip.tooltipster-error .tooltipster-content {
+	color: #721c24 !important;
+}
+#table-container {
+	height: 95vh;
+	max-height: 100vh;
+	overflow: scroll;
+	width: 100%;
+}
+#table-container a[href="#collapse"] {
+	position: absolute;
+	right: .5em;
+}
+#table-container table {
+	margin-bottom: 0;
+}
+#table-container #table-closefullscreen {
+	display: none;
+}
+#table-container.fullscreen {
+	background-color: #fff;
+	height: 100%;
+	max-height: unset;
+	left: 0;
+	overflow: scroll;
+	position: fixed;
+	top: 0;
+	width: 100%;
+}
+#table-container.fullscreen #table-closefullscreen {
+	display: block;
+	font-size: 2em;
+	position: fixed;
+	right: 1em;
+	top: 0;
+	z-index: 10;
+}
+#table-container th {
+	background-color: #eee;
+}
+#table-container tr.collapsed div {
+	max-height: 2.25em;
+	overflow-y: hidden;
+}
+#table-container ul {
+	margin-bottom: 0;
+	padding-left: 1em;
+}
