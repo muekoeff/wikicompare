@@ -1,3 +1,114 @@
+class LabelLoader {
+	constructor(requestsQueue) {
+		this.autoRequest = false;
+		this.cache = {};
+		this.queue = {};
+		this.queueRequesting = [];
+		this.queueToRequest = [];
+		this.requestQueue = requestsQueue;
+	}
+	static getLabel(wikidataLabels) {
+		if(typeof wikidataLabels[Settings.getLanguage()] == "object") {
+			return wikidataLabels[Settings.getLanguage()].value;
+		} else if(typeof wikidataLabels["en"] == "object") {
+			return wikidataLabels["en"].value;
+		} else if(typeof Object.keys(wikidataLabels).length > 0) {
+			return wikidataLabels[Object.keys(wikidataLabels)[0]];
+		} else {
+			return null;
+		}
+	}
+	enqueue(wikidataId, callbackSuccess, callbackError) {
+		if(typeof this.cache[wikidataId] == "object") {
+			callbackSuccess(this.cache[wikidataId]);
+		} else {
+			if(typeof this.queue[wikidataId] == "undefined") this.queue[wikidataId] = [];
+			
+			this.queue[wikidataId].push(new LabelLoaderQueueItem(callbackSuccess, callbackError));
+
+			if(this.queueRequesting.includes(wikidataId) && this.autoRequest) {
+				this._enqueueRequest(wikidataId);
+			} else {
+				if(!this.queueToRequest.includes(wikidataId)) this.queueToRequest.push(wikidataId);
+			}
+		}
+	}
+	enqueueAndReplace(wikidataId, elem, fallback) {
+		this.enqueue(wikidataId, function(wikidataLabels) {
+			if(!Array.isArray(elem)) elem = [elem];
+
+			var label = LabelLoader.getLabel(wikidataLabels);
+			if(label != null || typeof fallback == "string") {
+				$.each(elem, function(i, val) {
+					val.textContent = label || fallback;
+				});
+			}
+		});
+	}
+	startWork() {
+		var _this = this;
+
+		this._enqueueRequest(this.queueToRequest);
+		$.each(this.queueToRequest, function(i, val) {
+			if(!_this.queueRequesting.includes(val)) _this.queueRequesting.push(val);
+		});
+		
+		this.queueToRequest = [];
+	}
+	_enqueueRequest(wikidataIds) {
+		if(typeof wikidataIds == "string") wikidataIds = [wikidataIds];
+
+		var ids = wikidataIds.slice(0);
+		var _this = this;
+		while(ids.length > 0) {
+			var idsSegment = ids.slice(0,50);
+
+			this.requestQueue.enqueueRequest(function(requestQueue) {
+				$.ajax({
+					data: {
+						"action": "wbgetentities",
+						"props": "labels",
+						"format": "json",
+						"languages": `${Settings.getLanguage()}|en`,
+						"origin": "*",
+						"ids": idsSegment.join("|")
+					},
+					url: "https://www.wikidata.org/w/api.php"
+				}).always(function(e) {
+					requestQueue._finishRequest();
+				}).done(function(e) {
+					console.log(e);
+					$.each(idsSegment, function(i, wikidataId) {
+						_this.queueRequesting.pop(wikidataId);
+						$.each(_this.queue[wikidataId], function(j, val) {
+							if(typeof e.entities == "object" && typeof e.entities[wikidataId] == "object") {
+								val.callbackSuccess(e.entities[wikidataId].labels);
+							} else {
+								if(typeof val.callbackError == "function") val.callbackError();
+							}
+						});
+						delete _this.queue[wikidataId];
+					});
+				}).fail(function(e) {
+					$.each(idsSegment, function(i, wikidataId) {
+						_this.queueRequesting.pop(wikidataId);
+						$.each(_this.queue[wikidataId], function(i, val) {
+							if(typeof val.callbackError == "function") val.callbackError();
+						});
+						delete _this.queue[wikidataId];
+					});
+				});
+			});
+			ids = ids.slice(50);
+		}
+	}
+}
+class LabelLoaderQueueItem {
+	constructor(callbackSuccess, callbackError) {
+		this.callbackSuccess = callbackSuccess;
+		this.callbackError = callbackError;
+	}
+}
 class RequestQueue {
 	constructor(max) {
 		this.max = (max || 5);
@@ -16,9 +127,9 @@ class RequestQueue {
 				this.nextPointer = 0;
 				this.queue = [];
 			} else {
-				this.nextPointer += 1;
-				this.performing += 1;
 				this.queue[this.nextPointer](this);
+				this.performing += 1;
+				this.nextPointer += 1;
 			}
 		}
 	}
@@ -98,6 +209,9 @@ class Settings {
 				trigger: "custom"
 			}).tooltipster("open");
 		}
+	}
+	static getLanguage() {
+		return $("#setting-language-item").val().toLowerCase();
 	}
 	static initialize() {
 		$("#button-settings-geturl").click(function(e) {
@@ -185,6 +299,7 @@ class Utils {
 }
 var elements;
 var queue = new RequestQueue();
+var labelLoader = new LabelLoader(queue);
 
 jQuery(document).ready(function($) {
 	$("#button-parse").removeAttr("disabled").click(function(e) {
@@ -299,6 +414,7 @@ function generateTable(elements) {
 				}
 			});
 			updateProperties(allProperties);
+			labelLoader.startWork();
 		} else {
 			console.warn("No results");
 		}
@@ -325,24 +441,18 @@ function generateTable(elements) {
 			}
 		}
 	}
-	function getCollapseButton() {
-		return `<a href="#collapse">[–]</a>`;
-	}
 	
 	function updateEntities(entities) {
 		Object.keys(entities).forEach(function(val, i) {
 			var thisEntity = entities[val];
 			console.debug(thisEntity);
-			var label = wdGetLabel(thisEntity.labels);
-			$(`th[scope="col"][data-entity="${val}"] a`).text(label == null ? val : label.value);
+			var label = LabelLoader.getLabel(thisEntity.labels);
+			$(`th[scope="col"][data-entity="${val}"] a`).text(label == null ? val : label);
 		});
 	}
 	function updateProperties(properties) {
-		getEntities(properties, ["labels"], function(e) {
-			Object.keys(e).forEach(function(val, i) {
-				var thisProperty = e[val];
-				$(`th[scope="row"][data-entity="${val}"] a[href^='https://www.wikidata.org/']`).text(wdGetLabel(thisProperty.labels) == null ? val : wdGetLabel(thisProperty.labels).value);
-			});
+		$.each(properties, function(i, property) {
+			labelLoader.enqueueAndReplace(property, $(`th[scope="row"][data-entity="${property}"] a[href^='https://www.wikidata.org/']`).toArray(), property)
 		});
 	}
 	function listProperties(entities) {
@@ -380,7 +490,7 @@ function getEntities(ids, props, callback, callbackEr, requireFinishAll) {
 		var data = {
 			"action": "wbgetentities",
 			"format": "json",
-			"languages": `${$("#setting-language-item").val().toLowerCase()}|en`,
+			"languages": `${Settings.getLanguage()}|en`,
 			"origin": "*",
 			"ids": idsCopy.slice(0,50).join("|")
 		};
@@ -449,35 +559,42 @@ function wdDisplaySitelink(sitelink) {
 	}
 }
 function wdDisplayValue(claim) {
-	if(claim.mainsnak.datatype == "commonsMedia") {
-		return `<a href="https://commons.wikimedia.org/wiki/File:${_e(claim.mainsnak.datavalue.value)}" target="_blank">${_e(claim.mainsnak.datavalue.value)}</a>`;
-	} else if(claim.mainsnak.datatype == "external-id") {
-		return _e(claim.mainsnak.datavalue.value);
-	} else if(claim.mainsnak.datatype == "globe-coordinate") {
-		return _e(`${claim.mainsnak.datavalue.value.latitude},${claim.mainsnak.datavalue.value.longitude}`);
-	} else if(claim.mainsnak.datatype == "monolingualtext") {
-		return `${_e(claim.mainsnak.datavalue.value.text)} <small>(${_e(claim.mainsnak.datavalue.value.language)})</small>`;
-	} else if(claim.mainsnak.datatype == "string") {
-		return _e(claim.mainsnak.datavalue.value);
-	} else if(claim.mainsnak.datatype == "time") {
-		return _e(`${claim.mainsnak.datavalue.value.time}/${claim.mainsnak.datavalue.value.precision}`);
-	} else if(claim.mainsnak.datatype == "url") {
-		return `<a href="${_e(claim.mainsnak.datavalue.value)}" target="_blank">${claim.mainsnak.datavalue.value}</a>`;
-	} else if(claim.mainsnak.datatype == "wikibase-property") {
-		return `<a href="https://www.wikidata.org/wiki/Property:${_e(claim.mainsnak.datavalue.value.id)}" target="_blank" title="${_e(claim.mainsnak.datavalue.value.id)}">${_e(claim.mainsnak.datavalue.value.id)}</a>`;
-	} else if(claim.mainsnak.datatype == "wikibase-item") {
-		return `<a href="https://www.wikidata.org/wiki/${_e(claim.mainsnak.datavalue.value.id)}" target="_blank" title="${_e(claim.mainsnak.datavalue.value.id)}">${_e(claim.mainsnak.datavalue.value.id)}</a>`;
+	if(claim.mainsnak.snaktype == "somevalue") {
+		return `<em class="snak-somevalue">Some value</em>`;
+	} else if(claim.mainsnak.snaktype == "novalue") {
+		return `<em class="snak-novalue">No value</em>`;
+	} else if(claim.mainsnak.snaktype == "value") {
+		if(typeof claim.mainsnak.datatype == "undefined") {
+			console.warn(`Errornous mainsnak ${claim.mainsnak}`, claim);
+			return `<em class="snak-errornous">Errornous</em>`;
+		} else if(claim.mainsnak.datatype == "commonsMedia") {
+			return `<a href="https://commons.wikimedia.org/wiki/File:${_e(claim.mainsnak.datavalue.value)}" target="_blank">${_e(claim.mainsnak.datavalue.value)}</a>`;
+		} else if(claim.mainsnak.datatype == "external-id") {
+			return _e(claim.mainsnak.datavalue.value);
+		} else if(claim.mainsnak.datatype == "globe-coordinate") {
+			return _e(`${claim.mainsnak.datavalue.value.latitude},${claim.mainsnak.datavalue.value.longitude}`);
+		} else if(claim.mainsnak.datatype == "monolingualtext") {
+			return `${_e(claim.mainsnak.datavalue.value.text)} <small>(${_e(claim.mainsnak.datavalue.value.language)})</small>`;
+		} else if(claim.mainsnak.datatype == "quantity") {
+			// @TODO: Get display name
+			return `${_e(claim.mainsnak.datavalue.value.amount)} <small>(${_e(claim.mainsnak.datavalue.value.unit)})</small>`;
+		} else if(claim.mainsnak.datatype == "string") {
+			return _e(claim.mainsnak.datavalue.value);
+		} else if(claim.mainsnak.datatype == "time") {
+			return _e(`${claim.mainsnak.datavalue.value.time}/${claim.mainsnak.datavalue.value.precision}`);
+		} else if(claim.mainsnak.datatype == "url") {
+			return `<a href="${_e(claim.mainsnak.datavalue.value)}" target="_blank">${claim.mainsnak.datavalue.value}</a>`;
+		} else if(claim.mainsnak.datatype == "wikibase-property") {
+			return `<a href="https://www.wikidata.org/wiki/Property:${_e(claim.mainsnak.datavalue.value.id)}" target="_blank" title="${_e(claim.mainsnak.datavalue.value.id)}">${_e(claim.mainsnak.datavalue.value.id)}</a>`;
+		} else if(claim.mainsnak.datatype == "wikibase-item") {
+			return `<a href="https://www.wikidata.org/wiki/${_e(claim.mainsnak.datavalue.value.id)}" target="_blank" title="${_e(claim.mainsnak.datavalue.value.id)}">${_e(claim.mainsnak.datavalue.value.id)}</a>`;
+		} else {
+			console.warn(`Unknown datatype ${claim.mainsnak.datatype}`, claim);
+			return "<em>Present</em>";
+		}
 	} else {
-		console.warn(`Unknown datatype ${claim.mainsnak.datatype}`, claim)
-		return "<em>Present</em>";
-	}
-}
-function wdGetLabel(labels) {
-	var userLang = $("#setting-language-item").val().toLowerCase();
-	if(typeof labels[userLang] != "undefined") {
-		return labels[userLang]
-	} else if(typeof labels.en != "undefined") {
-		return labels.en;
+		console.warn(`Unknown snaktype ${claim.snaktype}`, claim);
+		return "<em>Unknown snaktype</em>";
 	}
 }
 /**
