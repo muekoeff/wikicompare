@@ -34,6 +34,9 @@ class LabelLoader {
 		}
 	}
 	enqueueAndReplace(wikidataId, elem, fallback) {
+		if(typeof elem == "function") elem = elem();
+		if(fallback == null) fallback = wikidataId;
+
 		this.enqueue(wikidataId, function(wikidataLabels) {
 			if(!Array.isArray(elem)) elem = [elem];
 
@@ -336,8 +339,10 @@ function generateTable(elements) {
 	getEntities(elements, [], function(e) {
 		var allProperties = [];
 		if(Object.keys(e).length > 0) {
+
 			// Update entities on UI
 			updateEntities(e);
+			$("#table-output tbody").html("");
 
 			// Add aliases-rows on UI
 			var cells = "";
@@ -355,10 +360,10 @@ function generateTable(elements) {
 					cells += `</ul></div></td>`;
 					maxlength = length > maxlength ? length : maxlength;
 				} else {
-					cells += `<td class="state-undefined" data-entity="${wdId}"></td>`;
+					cells += `<td class="snak-undefined" data-entity="${wdId}"><i>Undefined</i></td>`;
 				}
 			});
-			output += generateRow("Aliases", null, cells, maxlength, null, $("#setting-ui-collapsealiases")[0].checked)
+			$("#table-output tbody").append(generateRow("Aliases", null, cells, maxlength, null, $("#setting-ui-collapsealiases")[0].checked));
 
 			// Add sitelink-rows on UI
 			cells = "";
@@ -374,10 +379,10 @@ function generateTable(elements) {
 					cells += `</ul></div></td>`;
 					maxlength = length > maxlength ? length : maxlength;
 				} else {
-					cells += `<td class="state-undefined" data-entity="${wdId}"></td>`;
+					cells += `<td class="snak-undefined" data-entity="${wdId}"><i>Undefined</i></td>`;
 				}
 			});
-			output += generateRow("Sitelinks", null, cells, maxlength, null, $("#setting-ui-collapsesitelinks")[0].checked)
+			$("#table-output tbody").append(generateRow("Sitelinks", null, cells, maxlength, null, $("#setting-ui-collapsesitelinks")[0].checked));
 
 			// Add property-rows on UI
 			var allProperties = listProperties(e);
@@ -385,23 +390,26 @@ function generateTable(elements) {
 				cells = "";
 				maxlength = 0;
 
+				var row = generateRow(`<a href="https://www.wikidata.org/wiki/Property:${property}" target="_blank" title="${property}">${property}</a>`, property, null, maxlength);
+
 				Object.keys(e).forEach(function(wdId, i) {
 					if(typeof e[wdId].claims != "undefined" && typeof e[wdId].claims[property] != "undefined") {
 						var length = 0;
-						cells += `<td data-entity="${wdId}"><div><ul>`;
+						var listCell = $(`<td data-entity="${wdId}"><div><ul></ul></div></td>`);
 						$.each(e[wdId].claims[property], function(i, val) {
-							cells += `<li>${wdDisplayValue(val)}</li>`;
+							var listItem = $(`<li></li>`);
+							listItem.append(wdDisplayValue(val));
+							listCell.find("ul").append(listItem);
 							length++;
 						});
-						cells += `</ul></div></td>`;
+						row.append(listCell);
 						maxlength = length > maxlength ? length : maxlength;
 					} else {
-						cells += `<td class="state-undefined" data-entity="${wdId}"></td>`;
+						row.append(`<td class="snak-undefined" data-entity="${wdId}"><i>Undefined</i></td>`);
 					}
 				});
-				output += generateRow(`<a href="https://www.wikidata.org/wiki/Property:${property}" target="_blank" title="${property}">${property}</a>`, property, cells, maxlength);
+				$("#table-output tbody").append(row);
 			});
-			$("#table-output tbody").html(output);
 
 			// Add collapse event handler
 			$("#table-container a[href='#collapse']").click(function(e) {
@@ -423,11 +431,16 @@ function generateTable(elements) {
 		$.each(elements, function(colIndex, wdId) {
 			var row = $(`<th scope="col" ${colIndex == 0 ? `class="reference-item"` : ""} data-entity="${wdId}"><a href="https://www.wikidata.org/wiki/${wdId}" target="_blank" title="${wdId}">${wdId}</a></th>`);
 			$("#table-output thead tr").append(row);
+			labelLoader.enqueueAndReplace(wdId, row.find("a").toArray(), null);
 		});
 	}
 	function generateRow(title, property, cells, maxElementsInCell, classes, collapsed) {
 		collapsed = typeof collapsed == "boolean" && collapsed && maxElementsInCell >= 3;
-		return `<tr class="${collapsed ? "collapsed " : ""}${typeof classes == "string" ? classes : ""}"><th scope="row" ${property != null ? `data-entity="${property}"` : ""}>${title}${getCollapseButton()}</th>${cells}</tr>`;
+		var out =  $(`<tr class="${collapsed ? "collapsed " : ""}${typeof classes == "string" ? classes : ""}"><th scope="row" ${property != null ? `data-entity="${property}"` : ""}><span>${title}</span>${getCollapseButton()}</th>${cells || ""}</tr>`);
+		if(property != null) {
+			labelLoader.enqueueAndReplace(property, out.find("span a").toArray(), null);
+		}
+		return out;
 
 		function getCollapseButton() {
 			if(maxElementsInCell >= 3) {
@@ -452,7 +465,7 @@ function generateTable(elements) {
 	}
 	function updateProperties(properties) {
 		$.each(properties, function(i, property) {
-			labelLoader.enqueueAndReplace(property, $(`th[scope="row"][data-entity="${property}"] a[href^='https://www.wikidata.org/']`).toArray(), property)
+			labelLoader.enqueueAndReplace(property, $(`th[scope="row"][data-entity="${property}"] a[href^='https://www.wikidata.org/']`).toArray(), null)
 		});
 	}
 	function listProperties(entities) {
@@ -560,41 +573,52 @@ function wdDisplaySitelink(sitelink) {
 }
 function wdDisplayValue(claim) {
 	if(claim.mainsnak.snaktype == "somevalue") {
-		return `<em class="snak-somevalue">Some value</em>`;
+		return $(`<i class="snak-somevalue">Some value</i>`);
 	} else if(claim.mainsnak.snaktype == "novalue") {
-		return `<em class="snak-novalue">No value</em>`;
+		return $(`<i class="snak-novalue">No value</i>`);
 	} else if(claim.mainsnak.snaktype == "value") {
 		if(typeof claim.mainsnak.datatype == "undefined") {
 			console.warn(`Errornous mainsnak ${claim.mainsnak}`, claim);
-			return `<em class="snak-errornous">Errornous</em>`;
+			return $(`<i class="snak-errornous">Errornous</i>`);
 		} else if(claim.mainsnak.datatype == "commonsMedia") {
-			return `<a href="https://commons.wikimedia.org/wiki/File:${_e(claim.mainsnak.datavalue.value)}" target="_blank">${_e(claim.mainsnak.datavalue.value)}</a>`;
+			return $(`<a href="https://commons.wikimedia.org/wiki/File:${_e(claim.mainsnak.datavalue.value)}" target="_blank">${_e(claim.mainsnak.datavalue.value)}</a>`);
 		} else if(claim.mainsnak.datatype == "external-id") {
-			return _e(claim.mainsnak.datavalue.value);
+			return $(`<span>${_e(claim.mainsnak.datavalue.value)}</span>`);
 		} else if(claim.mainsnak.datatype == "globe-coordinate") {
-			return _e(`${claim.mainsnak.datavalue.value.latitude},${claim.mainsnak.datavalue.value.longitude}`);
+			return $(`<span>${_e(`${claim.mainsnak.datavalue.value.latitude},${claim.mainsnak.datavalue.value.longitude}`)}</span>`);
 		} else if(claim.mainsnak.datatype == "monolingualtext") {
-			return `${_e(claim.mainsnak.datavalue.value.text)} <small>(${_e(claim.mainsnak.datavalue.value.language)})</small>`;
+			return $(`<span>${_e(claim.mainsnak.datavalue.value.text)} <small>(${_e(claim.mainsnak.datavalue.value.language)})</small></span>`);
 		} else if(claim.mainsnak.datatype == "quantity") {
 			// @TODO: Get display name
-			return `${_e(claim.mainsnak.datavalue.value.amount)} <small>(${_e(claim.mainsnak.datavalue.value.unit)})</small>`;
+			if(claim.mainsnak.datavalue.value.unit.startsWith("http://www.wikidata.org/entity/")) {
+				var wdId = claim.mainsnak.datavalue.value.unit.replace("http://www.wikidata.org/entity/", "");
+				var out = $(`<span>${_e(claim.mainsnak.datavalue.value.amount)} <small>(<a href="https://www.wikidata.org/wiki/${_e(wdId)}" target="_blank" title=">${_e(wdId)}">${_e(wdId)}</a>)</small></span>`);
+				labelLoader.enqueueAndReplace(wdId, out.find("small a").toArray(), null);
+				return out;
+			} else {
+				return $(`<span>${_e(claim.mainsnak.datavalue.value.amount)} <small>(${claim.mainsnak.datavalue.value.unit})</small></span>`);
+			}
 		} else if(claim.mainsnak.datatype == "string") {
-			return _e(claim.mainsnak.datavalue.value);
+			return $(`<span>${_e(claim.mainsnak.datavalue.value)}</span>`);
 		} else if(claim.mainsnak.datatype == "time") {
-			return _e(`${claim.mainsnak.datavalue.value.time}/${claim.mainsnak.datavalue.value.precision}`);
+			return $(`<span>${_e(`${claim.mainsnak.datavalue.value.time}/${claim.mainsnak.datavalue.value.precision}`)}</span>`);
 		} else if(claim.mainsnak.datatype == "url") {
-			return `<a href="${_e(claim.mainsnak.datavalue.value)}" target="_blank">${claim.mainsnak.datavalue.value}</a>`;
+			return $(`<a href="${_e(claim.mainsnak.datavalue.value)}" target="_blank">${_e(claim.mainsnak.datavalue.value)}</a>`);
 		} else if(claim.mainsnak.datatype == "wikibase-property") {
-			return `<a href="https://www.wikidata.org/wiki/Property:${_e(claim.mainsnak.datavalue.value.id)}" target="_blank" title="${_e(claim.mainsnak.datavalue.value.id)}">${_e(claim.mainsnak.datavalue.value.id)}</a>`;
+			var out = $(`<a href="https://www.wikidata.org/wiki/Property:${_e(claim.mainsnak.datavalue.value.id)}" target="_blank" title="${_e(claim.mainsnak.datavalue.value.id)}">${_e(claim.mainsnak.datavalue.value.id)}</a>`);
+			labelLoader.enqueueAndReplace(claim.mainsnak.datavalue.value.id, out.toArray(), null);
+			return out;
 		} else if(claim.mainsnak.datatype == "wikibase-item") {
-			return `<a href="https://www.wikidata.org/wiki/${_e(claim.mainsnak.datavalue.value.id)}" target="_blank" title="${_e(claim.mainsnak.datavalue.value.id)}">${_e(claim.mainsnak.datavalue.value.id)}</a>`;
+			var out = $(`<a href="https://www.wikidata.org/wiki/${_e(claim.mainsnak.datavalue.value.id)}" target="_blank" title="${_e(claim.mainsnak.datavalue.value.id)}">${_e(claim.mainsnak.datavalue.value.id)}</a>`);
+			labelLoader.enqueueAndReplace(claim.mainsnak.datavalue.value.id, out.toArray(), null);
+			return out;
 		} else {
 			console.warn(`Unknown datatype ${claim.mainsnak.datatype}`, claim);
-			return "<em>Present</em>";
+			return $(`<i>Present</i>`);
 		}
 	} else {
 		console.warn(`Unknown snaktype ${claim.snaktype}`, claim);
-		return "<em>Unknown snaktype</em>";
+		return $(`<i>Unknown snaktype</i>`);
 	}
 }
 /**

@@ -11,12 +11,8 @@ textarea {
 .reference-item {
 	background-color: #fff8e1 !important;
 }
-.state-undefined {
+.snak-undefined {
 	background-color: rgba(255,0,0,.3);
-}
-.state-undefined::after {
-	content: "Undefined";
-	font-style: italic;
 }
 .tooltipster-sidetip.tooltipster-error.tooltipster-left .tooltipster-arrow-background {
 	border-left-color: #f8d7da !important;
