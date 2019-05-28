@@ -33,18 +33,21 @@ class LabelLoader {
 			}
 		}
 	}
-	enqueueAndReplace(wikidataId, elem, fallback) {
+	enqueueAndReplace(wikidataId, elem, fallback, forceLabel) {
 		if(typeof elem == "function") elem = elem();
-		if(fallback == null) fallback = wikidataId;
+		if(typeof fallback != "string") fallback = wikidataId;
+		if(typeof forceLabel != "boolean") forceLabel = false;
 
 		this.enqueue(wikidataId, function(wikidataLabels) {
-			if(!Array.isArray(elem)) elem = [elem];
+			if(forceLabel || !$("#setting-ui-displaywdid").prop("checked")) {
+				if(!Array.isArray(elem)) elem = [elem];
 
-			var label = LabelLoader.getLabel(wikidataLabels);
-			if(label != null || typeof fallback == "string") {
-				$.each(elem, function(i, val) {
-					val.textContent = label || fallback;
-				});
+				var label = LabelLoader.getLabel(wikidataLabels);
+				if(label != null || typeof fallback == "string") {
+					$.each(elem, function(i, val) {
+						val.textContent = label || fallback;
+					});
+				}
 			}
 		});
 	}
@@ -80,7 +83,7 @@ class LabelLoader {
 				}).always(function(e) {
 					requestQueue._finishRequest();
 				}).done(function(e) {
-					console.log(e);
+					console.debug(e);
 					$.each(idsSegment, function(i, wikidataId) {
 						_this.queueRequesting.pop(wikidataId);
 						$.each(_this.queue[wikidataId], function(j, val) {
@@ -187,14 +190,17 @@ class Settings {
 	static export() {
 		if($("#button-settings-geturl").hasClass("mode-ready")) {
 			var settings = {
-				"language-item": $("#setting-language-item").val(),
-				"language-search": $("#setting-language-search").val(),
-				"ui-collapsealiases": $("setting-ui-collapsealiases").val(),
-				"ui-collapsesitelinks": $("#setting-ui-collapsesitelinks").val(),
-				"ui-displayimages": $("#setting-ui-displayimages").val(),
-				"ui-stickyheadercolumn": $("#setting-ui-stickyheadercolumn").val(),
-				"ui-stickyheaderrow": $("#setting-ui-stickyheaderrow").val(),
-				"ui-visitedlinks": $("#setting-ui-visitedlinks").val()
+				"language-label": $("#setting-language-label").val(),
+				"ui-collapsealiases": $("setting-ui-collapsealiases").prop("checked"),
+				"ui-collapsedescriptions": $("setting-ui-collapsedescriptions").prop("checked"),
+				"ui-collapsesitelinks": $("#setting-ui-collapsesitelinks").prop("checked"),
+				"ui-displayimages": $("#setting-ui-displayimages").prop("checked"),
+				"ui-displaylangalias": $("#setting-ui-displaylangalias").val(),
+				"ui-displaylangdescription": $("#setting-ui-displaylangdescription").val(),
+				"ui-displaywdid": $("#setting-ui-displaywdid").prop("checked"),
+				"ui-stickyheadercolumn": $("#setting-ui-stickyheadercolumn").prop("checked"),
+				"ui-stickyheaderrow": $("#setting-ui-stickyheaderrow").prop("checked"),
+				"ui-visitedlinks": $("#setting-ui-visitedlinks").prop("checked")
 			};
 			window.location.search = `?settings=${encodeURIComponent(JSON.stringify(settings))}`;
 		} else {
@@ -214,7 +220,7 @@ class Settings {
 		}
 	}
 	static getLanguage() {
-		return $("#setting-language-item").val().toLowerCase();
+		return $("#setting-language-label").val().toLowerCase();
 	}
 	static initialize() {
 		$("#button-settings-geturl").click(function(e) {
@@ -232,11 +238,24 @@ class Settings {
 			try {
 				var settings = JSON.parse(query);
 
-				if(typeof settings["language-item"] != "undefined") $("#setting-language-item").val(settings["language-item"]);
-				if(typeof settings["language-search"] != "undefined") $("#setting-language-search").val(settings["language-search"]);
+				assign(settings, "language-label", x => $("#setting-language-label").val(x));
+				assign(settings, "ui-collapsealiases", x => $("setting-ui-collapsealiases").val(x));
+				assign(settings, "ui-collapsedescriptions", x => $("setting-ui-collapsedescriptions").prop("checked", x));
+				assign(settings, "ui-collapsesitelinks", x => $("#setting-ui-collapsesitelinks").prop("checked", x));
+				assign(settings, "ui-displayimages", x => $("#setting-ui-displayimages").prop("checked", x));
+				assign(settings, "ui-displaylangalias", x => $("#setting-ui-displaylangalias").val(x));
+				assign(settings, "ui-displaylangdescription", x => $("#setting-ui-displaylangdescription").val(x));
+				assign(settings, "ui-displaywdid", x => $("#setting-ui-displaywdid").prop("checked", x));
+				assign(settings, "ui-stickyheadercolumn", x => $("#setting-ui-stickyheadercolumn").prop("checked", x));
+				assign(settings, "ui-stickyheaderrow", x => $("#setting-ui-stickyheaderrow").prop("checked", x));
+				assign(settings, "ui-visitedlinks", x => $("#setting-ui-visitedlinks").prop("checked", x));
 			} catch(ex) {
 				console.warn(ex);
 			}
+		}
+
+		function assign(settings, key, assignFunction) {
+			if(typeof settings[key] != "undefined") assignFunction(settings[key]);
 		}
 	}
 	static loadLanguages() {	// https://www.wikidata.org/w/api.php?action=help&modules=wbsearchentities
@@ -248,15 +267,9 @@ class Settings {
 		})
 	}
 }
-class TableRow {
-	addCell() {
-
-	}
-	addTitle(html) {
-
-	}
-	getRow() {
-
+class Ui {
+	static getIdLabel(wdId, label) {
+		return `<span class="idlabel" ${label == null ? "" : `data-label="${label}" `} data-wdid="${_e(wdId)}">${($("#setting-ui-displaywdid").prop("checked") || label == null) ? _e(wdId) : label}</span>`;
 	}
 }
 class Utils {
@@ -264,8 +277,7 @@ class Utils {
 		var a = array.concat();
 		for(var i=0; i<a.length; ++i) {
 			for(var j=i+1; j<a.length; ++j) {
-				if(a[i] === a[j])
-					a.splice(j--, 1);
+				if(a[i] === a[j]) a.splice(j--, 1);
 			}
 		}
 	
@@ -305,6 +317,7 @@ var queue = new RequestQueue();
 var labelLoader = new LabelLoader(queue);
 
 jQuery(document).ready(function($) {
+	var toggle_wdid = false;
 	$("#button-parse").removeAttr("disabled").click(function(e) {
 		e.preventDefault();
 		$(this).attr("disabled", "disabled");
@@ -313,8 +326,8 @@ jQuery(document).ready(function($) {
 
 		// Reset table
 		if(userInput_entities.length > 0) {
-			$("#table-output tbody").html("");
 			$("#table-output thead tr").html("<th></th>");
+			$("#table-output tbody").html("");
 		} else {
 			$("#table-output thead tr").html(`<th scope="col">&nbsp;</th>`);
 			$("#table-output tbody tr").html(`<td>No data</td>`);
@@ -328,13 +341,26 @@ jQuery(document).ready(function($) {
 		e.preventDefault();
 		$("#table-container").toggleClass("fullscreen");
 	});
+	$("a[href='#toggle_wdid']").click(function(e) {
+		e.preventDefault();
+		var $_this = $(this);
+		$("*[data-wdid]").each(function(i, val) {
+			if(typeof $(val).attr("data-label") != "string") $(val).attr("data-label", $(val).text());
+			if(toggle_wdid) {
+				$_this.text("Display Wikidata IDs");
+				$(val).text($(val).attr("data-label"));
+			} else {
+				$_this.text("Display labels");
+				$(val).text($(val).attr("data-wdid"));
+			}
+		});
+		toggle_wdid = !toggle_wdid;
+	});
 
 	Settings.initialize();
 });
 
-
 function generateTable(elements) {
-	var output = "";
 	generateColumns(elements);
 	getEntities(elements, [], function(e) {
 		var allProperties = [];
@@ -350,10 +376,10 @@ function generateTable(elements) {
 			Object.keys(e).forEach(function(wdId, i) {
 				if(typeof e[wdId].aliases != "undefined") {
 					var length = 0;
-					cells += `<td data-entity="${wdId}"><div><ul>`;
+					cells += `<td data-entity="${wdId}"><div><ul class="reordableList">`;
 					$.each(e[wdId].aliases, function(i, lang) {
 						$.each(lang, function(i, val) {
-							cells += `<li>${wdDisplayAlias(val)}</li>`;
+							cells += `<li class="${val.language == Settings.getLanguage() ? "highlight" : ""}">${wdDisplayAlias(val)}</li>`;
 							length++;
 						});
 					});
@@ -364,6 +390,25 @@ function generateTable(elements) {
 				}
 			});
 			$("#table-output tbody").append(generateRow("Aliases", null, cells, maxlength, null, $("#setting-ui-collapsealiases")[0].checked));
+
+			// Add description-rows on UI
+			cells = "";
+			maxlength = 0;
+			Object.keys(e).forEach(function(wdId, i) {
+				if(typeof e[wdId].descriptions != "undefined") {
+					var length = 0;
+					cells += `<td data-entity="${wdId}"><div><ul class="reordableList">`;
+					$.each(e[wdId].descriptions, function(i, val) {
+						cells += `<li class="${val.language == Settings.getLanguage() ? "highlight" : ""}"><span class="bubble">${val.language}</span> ${val.value}</li>`;
+						length++;
+					});
+					cells += `</ul></div></td>`;
+					maxlength = length > maxlength ? length : maxlength;
+				} else {
+					cells += `<td class="snak-undefined" data-entity="${wdId}"><i>Undefined</i></td>`;
+				}
+			});
+			$("#table-output tbody").append(generateRow("Descriptions", null, cells, maxlength, null, true));
 
 			// Add sitelink-rows on UI
 			cells = "";
@@ -390,7 +435,7 @@ function generateTable(elements) {
 				cells = "";
 				maxlength = 0;
 
-				var row = generateRow(`<a href="https://www.wikidata.org/wiki/Property:${property}" target="_blank" title="${property}">${property}</a>`, property, null, maxlength);
+				var row = generateRow(`<a href="https://www.wikidata.org/wiki/Property:${property}" target="_blank" title="${property}" data-wdid="${property}">${property}</a>`, property, null, maxlength);
 
 				Object.keys(e).forEach(function(wdId, i) {
 					if(typeof e[wdId].claims != "undefined" && typeof e[wdId].claims[property] != "undefined") {
@@ -429,9 +474,8 @@ function generateTable(elements) {
 	});
 	function generateColumns(elements) {
 		$.each(elements, function(colIndex, wdId) {
-			var row = $(`<th scope="col" ${colIndex == 0 ? `class="reference-item"` : ""} data-entity="${wdId}"><a href="https://www.wikidata.org/wiki/${wdId}" target="_blank" title="${wdId}">${wdId}</a></th>`);
-			$("#table-output thead tr").append(row);
-			labelLoader.enqueueAndReplace(wdId, row.find("a").toArray(), null);
+			var cell = $(`<th scope="col" ${colIndex == 0 ? `class="reference-item" ` : ""} data-entity="${wdId}"><a href="https://www.wikidata.org/wiki/${wdId}" target="_blank" title="${wdId}">${Ui.getIdLabel(wdId, null)}</a></th>`);
+			$("#table-output thead tr").append(cell);
 		});
 	}
 	function generateRow(title, property, cells, maxElementsInCell, classes, collapsed) {
@@ -460,7 +504,7 @@ function generateTable(elements) {
 			var thisEntity = entities[val];
 			console.debug(thisEntity);
 			var label = LabelLoader.getLabel(thisEntity.labels);
-			$(`th[scope="col"][data-entity="${val}"] a`).text(label == null ? val : label);
+			$(`th[scope="col"][data-entity="${val}"] a`).html(Ui.getIdLabel(val, label));
 		});
 	}
 	function updateProperties(properties) {
@@ -503,7 +547,6 @@ function getEntities(ids, props, callback, callbackEr, requireFinishAll) {
 		var data = {
 			"action": "wbgetentities",
 			"format": "json",
-			"languages": `${Settings.getLanguage()}|en`,
 			"origin": "*",
 			"ids": idsCopy.slice(0,50).join("|")
 		};
@@ -550,7 +593,7 @@ function parseUserInput() {
 	return elements;
 }
 function wdDisplayAlias(alias) {
-	return `${alias.language} ${alias.value}`;
+	return `<span class="bubble">${alias.language}</span> ${alias.value}`;
 }
 function wdDisplaySitelink(sitelink) {
 	if(sitelink.site == "commonswiki") {
@@ -592,11 +635,15 @@ function wdDisplayValue(claim) {
 			// @TODO: Get display name
 			if(claim.mainsnak.datavalue.value.unit.startsWith("http://www.wikidata.org/entity/")) {
 				var wdId = claim.mainsnak.datavalue.value.unit.replace("http://www.wikidata.org/entity/", "");
-				var out = $(`<span>${_e(claim.mainsnak.datavalue.value.amount)} <small>(<a href="https://www.wikidata.org/wiki/${_e(wdId)}" target="_blank" title=">${_e(wdId)}">${_e(wdId)}</a>)</small></span>`);
+				var out = $(`<span>${_e(claim.mainsnak.datavalue.value.amount)} <small>(<a href="https://www.wikidata.org/wiki/${_e(wdId)}" target="_blank" title="${wdId}" data-wdid="${wdId}">${_e(wdId)}</a>)</small></span>`);
 				labelLoader.enqueueAndReplace(wdId, out.find("small a").toArray(), null);
 				return out;
 			} else {
-				return $(`<span>${_e(claim.mainsnak.datavalue.value.amount)} <small>(${claim.mainsnak.datavalue.value.unit})</small></span>`);
+				if(claim.mainsnak.datavalue.value.unit == "1") {
+					return $(`<span>${_e(claim.mainsnak.datavalue.value.amount)}</span>`);
+				} else {
+					return $(`<span>${_e(claim.mainsnak.datavalue.value.amount)} <small>(${claim.mainsnak.datavalue.value.unit})</small></span>`);
+				}
 			}
 		} else if(claim.mainsnak.datatype == "string") {
 			return $(`<span>${_e(claim.mainsnak.datavalue.value)}</span>`);
@@ -605,12 +652,14 @@ function wdDisplayValue(claim) {
 		} else if(claim.mainsnak.datatype == "url") {
 			return $(`<a href="${_e(claim.mainsnak.datavalue.value)}" target="_blank">${_e(claim.mainsnak.datavalue.value)}</a>`);
 		} else if(claim.mainsnak.datatype == "wikibase-property") {
-			var out = $(`<a href="https://www.wikidata.org/wiki/Property:${_e(claim.mainsnak.datavalue.value.id)}" target="_blank" title="${_e(claim.mainsnak.datavalue.value.id)}">${_e(claim.mainsnak.datavalue.value.id)}</a>`);
-			labelLoader.enqueueAndReplace(claim.mainsnak.datavalue.value.id, out.toArray(), null);
+			var wdId = claim.mainsnak.datavalue.value.id;
+			var out = $(`<a href="https://www.wikidata.org/wiki/Property:${_e(wdId)}" target="_blank" title="${_e(wdId)}">${Ui.getIdLabel(wdId, null)}</a>`);
+			labelLoader.enqueueAndReplace(wdId, out.find(".idlabel").toArray(), null);
 			return out;
 		} else if(claim.mainsnak.datatype == "wikibase-item") {
-			var out = $(`<a href="https://www.wikidata.org/wiki/${_e(claim.mainsnak.datavalue.value.id)}" target="_blank" title="${_e(claim.mainsnak.datavalue.value.id)}">${_e(claim.mainsnak.datavalue.value.id)}</a>`);
-			labelLoader.enqueueAndReplace(claim.mainsnak.datavalue.value.id, out.toArray(), null);
+			var wdId = claim.mainsnak.datavalue.value.id;
+			var out = $(`<a href="https://www.wikidata.org/wiki/${_e(wdId)}" target="_blank" title="${_e(wdId)}">${Ui.getIdLabel(wdId, null)}</a>`);
+			labelLoader.enqueueAndReplace(wdId, out.find(".idlabel").toArray(), null);
 			return out;
 		} else {
 			console.warn(`Unknown datatype ${claim.mainsnak.datatype}`, claim);

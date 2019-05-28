@@ -1,6 +1,11 @@
 textarea {
 	width: 100%;
 }
+.bubble {
+	background: #ccc;
+	border-radius: 4px;
+	padding: 0 .3em;
+}
 .container {
 	margin-bottom:1.5em;
 	margin-top:1.5em
@@ -10,6 +15,19 @@ textarea {
 }
 .reference-item {
 	background-color: #fff8e1 !important;
+}
+.reordableList {
+	display: flex;
+	flex-direction: column;
+}
+.reordableList li {
+	order: 2;
+}
+.reordableList li.highlight {
+	order: 1;
+}
+.reordableList li.highlight .bubble {
+	background: lightskyblue;
 }
 .snak-undefined {
 	background-color: rgba(255,0,0,.3);

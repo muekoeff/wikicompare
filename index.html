@@ -50,7 +50,7 @@
 	<div id="rowTable" style="margin-top:1.5em">
 		<div class="row" style="align-items:flex-end;display:flex">
 			<h3 style="flex-grow:1">Data</h3>
-			<a href="#fullscreen">Display table fullscreen</a>
+			<a href="#toggle_wdid">Display Wikidata IDs</a> <span style="padding:0 .3em">&bull;</span> <a href="#fullscreen">Display fullscreen</a>
 		</div>
 		<div class="row">
 			<div id="table-container">
@@ -85,15 +85,23 @@
 				<table class="table" role="grid">
 					<tbody>
 						<tr>
-							<th scope="row"><label for="setting-language-search">Search language</label></th>
-							<td>
-								<input id="setting-language-search" class="form-control custom-select" type="text" list="languages" value="en" />
+							<th scope="row" colspan="2"><label for="setting-language-label">Label language</label></th>
+							<td colspan="2">
+								<input id="setting-language-label" class="form-control custom-select" type="text" list="languages" value="en" />
 							</td>
 						</tr>
 						<tr>
-							<th scope="row"><label for="setting-language-item">Item description language</label></th>
-							<td>
-								<input id="setting-language-item" class="form-control custom-select" type="text" list="languages" value="en" />
+							<th scope="row" colspan="2"><label for="setting-ui-displaylangalias">Displayed languages for aliases</label></th>
+							<td colspan="2">
+								<input id="setting-ui-displaylangalias" class="form-control custom-select" type="text" list="languages" /><br/>
+								<small>(Separated by commas, leave empty to display all)</small>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row" colspan="2"><label for="setting-ui-displaylangdescription">Displayed languages for descriptions</label></th>
+							<td colspan="2">
+								<input id="setting-ui-displaylangdescription" class="form-control custom-select" type="text" list="languages" /><br/>
+								<small>(Separated by commas, leave empty to display all)</small>
 							</td>
 						</tr>
 						<tr>
@@ -101,11 +109,20 @@
 							<td>
 								<input id="setting-ui-displayimages" class="form-control" type="checkbox" />
 							</td>
+							<th scope="row"><label for="setting-ui-collapsesitelinks">Pre-collapse sitelinks</label></th>
+							<td>
+								<input id="setting-ui-collapsesitelinks" class="form-control" type="checkbox" checked />
+							</td>
+							
 						</tr>
 						<tr>
 							<th scope="row"><label for="setting-ui-stickyheaderrow">Sticky header row</label></th>
 							<td>
 								<input id="setting-ui-stickyheaderrow" class="form-control" type="checkbox" checked />
+							</td>
+							<th scope="row"><label for="setting-ui-collapsedescriptions">Pre-collapse descriptions</label></th>
+							<td>
+								<input id="setting-ui-collapsedescriptions" class="form-control" type="checkbox" checked />
 							</td>
 						</tr>
 						<tr>
@@ -113,23 +130,19 @@
 							<td>
 								<input id="setting-ui-stickyheadercolumn" class="form-control" type="checkbox" checked />
 							</td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="setting-ui-visitedlinks">Make visited links purple</label></th>
-							<td>
-								<input id="setting-ui-visitedlinks" class="form-control" type="checkbox" checked />
-							</td>
-						</tr>
-						<tr>
 							<th scope="row"><label for="setting-ui-collapsealiases">Pre-collapse aliases</label></th>
 							<td>
 								<input id="setting-ui-collapsealiases" class="form-control" type="checkbox" checked />
 							</td>
 						</tr>
 						<tr>
-							<th scope="row"><label for="setting-ui-collapsesitelinks">Pre-collapse sitelinks</label></th>
+							<th scope="row"><label for="setting-ui-visitedlinks">Make visited links purple</label></th>
 							<td>
-								<input id="setting-ui-collapsesitelinks" class="form-control" type="checkbox" checked />
+								<input id="setting-ui-visitedlinks" class="form-control" type="checkbox" checked />
+							</td>
+							<th scope="row"><label for="setting-ui-displaywdid">Display Wikidata IDs rather than labels</label></th>
+							<td>
+								<input id="setting-ui-displaywdid" class="form-control" type="checkbox" />
 							</td>
 						</tr>
 						<datalist id="languages"></datalist>
