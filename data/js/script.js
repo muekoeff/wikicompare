@@ -67,9 +67,9 @@ class LabelLoader {
 		var ids = wikidataIds.slice(0);
 		var _this = this;
 		while(ids.length > 0) {
-			var idsSegment = ids.slice(0,50);
-
 			this.requestQueue.enqueueRequest(function(requestQueue) {
+				var idsSegment = ids.slice(0,50);
+				
 				$.ajax({
 					data: {
 						"action": "wbgetentities",
@@ -358,6 +358,21 @@ jQuery(document).ready(function($) {
 	});
 
 	Settings.initialize();
+
+	// Load query parameters
+	var urlParams = new URLSearchParams(window.location.search);
+	if(urlParams.get("i") != null) {
+		$("#commands").val(urlParams.get("i").split(",").join("\n"));
+
+		// Auto-execute?
+		if(urlParams.has("r")) {
+			$("#button-parse").click();
+
+			if(urlParams.has("f")) {
+				$("#table-container").toggleClass("fullscreen");;
+			}
+		}
+	}
 });
 
 function generateTable(elements) {
