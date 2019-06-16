@@ -67,9 +67,7 @@ class LabelLoader {
 		var ids = wikidataIds.slice(0);
 		var _this = this;
 		while(ids.length > 0) {
-			this.requestQueue.enqueueRequest(function(requestQueue) {
-				var idsSegment = ids.slice(0,50);
-				
+			this.requestQueue.enqueueRequest(function(requestQueue, data) {
 				$.ajax({
 					data: {
 						"action": "wbgetentities",
@@ -77,14 +75,14 @@ class LabelLoader {
 						"format": "json",
 						"languages": `${Settings.getLanguage()}|en`,
 						"origin": "*",
-						"ids": idsSegment.join("|")
+						"ids": data.idsSegment.join("|")
 					},
 					url: "https://www.wikidata.org/w/api.php"
 				}).always(function(e) {
 					requestQueue._finishRequest();
 				}).done(function(e) {
 					console.debug(e);
-					$.each(idsSegment, function(i, wikidataId) {
+					$.each(data.idsSegment, function(i, wikidataId) {
 						_this.queueRequesting.pop(wikidataId);
 						$.each(_this.queue[wikidataId], function(j, val) {
 							if(typeof e.entities == "object" && typeof e.entities[wikidataId] == "object") {
@@ -96,7 +94,7 @@ class LabelLoader {
 						delete _this.queue[wikidataId];
 					});
 				}).fail(function(e) {
-					$.each(idsSegment, function(i, wikidataId) {
+					$.each(data.idsSegment, function(i, wikidataId) {
 						_this.queueRequesting.pop(wikidataId);
 						$.each(_this.queue[wikidataId], function(i, val) {
 							if(typeof val.callbackError == "function") val.callbackError();
@@ -104,6 +102,8 @@ class LabelLoader {
 						delete _this.queue[wikidataId];
 					});
 				});
+			}, {
+				idsSegment: ids.slice(0,50)
 			});
 			ids = ids.slice(50);
 		}
@@ -113,35 +113,6 @@ class LabelLoaderQueueItem {
 	constructor(callbackSuccess, callbackError) {
 		this.callbackSuccess = callbackSuccess;
 		this.callbackError = callbackError;
-	}
-}
-class RequestQueue {
-	constructor(max) {
-		this.max = (max || 5);
-		this.nextPointer = 0;
-		this.queue = [];
-		this.performing = 0;
-	}
-	enqueueRequest(request) {
-		this.queue.push(request);
-		this.work();
-	}
-	work() {
-		if(this.max > this.performing) {
-			if(typeof this.queue[this.nextPointer] == "undefined") {
-				console.debug("Queue finished");
-				this.nextPointer = 0;
-				this.queue = [];
-			} else {
-				this.queue[this.nextPointer](this);
-				this.performing += 1;
-				this.nextPointer += 1;
-			}
-		}
-	}
-	_finishRequest() {
-		this.performing -= 1;
-		this.work();
 	}
 }
 class Settings {
@@ -272,46 +243,6 @@ class Ui {
 		return `<span class="idlabel" ${label == null ? "" : `data-label="${label}" `} data-wdid="${_e(wdId)}">${($("#setting-ui-displaywdid").prop("checked") || label == null) ? _e(wdId) : label}</span>`;
 	}
 }
-class Utils {
-	static arrayUnique(array) {
-		var a = array.concat();
-		for(var i=0; i<a.length; ++i) {
-			for(var j=i+1; j<a.length; ++j) {
-				if(a[i] === a[j]) a.splice(j--, 1);
-			}
-		}
-	
-		return a;
-	}
-	static copyTextToClipboard(text) {
-		var textArea = document.createElement("textarea");
-
-		textArea.style.position = 'fixed';
-		textArea.style.top = 0;
-		textArea.style.left = 0;
-		textArea.style.width = '2em';
-		textArea.style.height = '2em';
-		textArea.style.padding = 0;
-		textArea.style.border = 'none';
-		textArea.style.outline = 'none';
-		textArea.style.boxShadow = 'none';
-		textArea.style.background = 'transparent';
-		textArea.value = text;
-		document.body.appendChild(textArea);
-		textArea.select();
-
-		try {
-			document.execCommand('copy');
-		} catch(e) {
-			console.error(e);
-		}
-
-		document.body.removeChild(textArea);
-	}
-	static validateNumber(i, fallback) {
-		return (isNaN(i) ? fallback : i);
-	}
-}
 var elements;
 var queue = new RequestQueue();
 var labelLoader = new LabelLoader(queue);
@@ -388,7 +319,8 @@ function generateTable(elements) {
 			// Add aliases-rows on UI
 			var cells = "";
 			var maxlength = 0;
-			Object.keys(e).forEach(function(wdId, i) {
+			elements.forEach(function(wdId, i) {
+				
 				if(typeof e[wdId].aliases != "undefined") {
 					var length = 0;
 					cells += `<td data-entity="${wdId}"><div><ul class="reordableList">`;
@@ -409,7 +341,7 @@ function generateTable(elements) {
 			// Add description-rows on UI
 			cells = "";
 			maxlength = 0;
-			Object.keys(e).forEach(function(wdId, i) {
+			elements.forEach(function(wdId, i) {
 				if(typeof e[wdId].descriptions != "undefined") {
 					var length = 0;
 					cells += `<td data-entity="${wdId}"><div><ul class="reordableList">`;
@@ -428,7 +360,7 @@ function generateTable(elements) {
 			// Add sitelink-rows on UI
 			cells = "";
 			maxlength = 0;
-			Object.keys(e).forEach(function(wdId, i) {
+			elements.forEach(function(wdId, i) {
 				if(typeof e[wdId].sitelinks != "undefined") {
 					var length = 0;
 					cells += `<td data-entity="${wdId}"><div><ul>`;
@@ -452,7 +384,7 @@ function generateTable(elements) {
 
 				var row = generateRow(`<a href="https://www.wikidata.org/wiki/Property:${property}" target="_blank" title="${property}" data-wdid="${property}">${property}</a>`, property, null, maxlength);
 
-				Object.keys(e).forEach(function(wdId, i) {
+				elements.forEach(function(wdId, i) {
 					if(typeof e[wdId].claims != "undefined" && typeof e[wdId].claims[property] != "undefined") {
 						var length = 0;
 						var listCell = $(`<td data-entity="${wdId}"><div><ul></ul></div></td>`);
@@ -553,7 +485,7 @@ function generateTable(elements) {
 }
 function getEntities(ids, props, callback, callbackEr, requireFinishAll) {
 	idsCopy = ids.slice(0);
-	numberOfRequests = Math.floor(ids.length / 50);
+	numberOfRequests = Math.ceil(ids.length / 50);
 	finishedRequests = 0;
 	if(typeof requireFinishAll == "undefined") requireFinishAll = true;
 	allResults = {};
@@ -684,13 +616,4 @@ function wdDisplayValue(claim) {
 		console.warn(`Unknown snaktype ${claim.snaktype}`, claim);
 		return $(`<i>Unknown snaktype</i>`);
 	}
-}
-/**
- * Sanitises a given string
- *
- * @param	string	text	Text to sanitise
- * @return	string	Sanitised string
- */
-function _e(text) {
-	return $('<div/>').text(text).html();
 }

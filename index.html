@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html class="stickyfooter" lang="en">
 <head>
 <meta charset="utf-8" />
 <meta content="nw520" name="author" />
@@ -19,14 +19,12 @@
 	</button>
 	<div class="collapse navbar-collapse" id="navbarToggler">
 		<ul class="nav navbar-nav">
-			<li class="nav-item">
-				<a class="nav-link" href="https://nw520.github.io/WikiRsolve/" rel="nofollow noopener">WikiRsolve</a>
-			</li>
-			<li class="nav-item">
-				<a class="nav-link" href="https://github.com/nw520/WikiCompare" target="_blank" rel="nofollow noopener">GitHub</a>
-			</li>
-			<li class="nav-item">
-				<a class="nav-link" href="https://tools.wmflabs.org/quickstatements/#/batch" target="_blank" rel="nofollow noopener">QuickStatements</a>
+			<li class="nav-item dropdown">
+				<a class="nav-link dropdown-toggle" href="#" id="navitem-tools" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">More Wikidata tools</a>
+				<div class="dropdown-menu" aria-labelledby="navitem-tools">
+					<a class="dropdown-item" href="https://nw520.github.io/WikiOSMerged/" rel="nofollow noopener">WikiOSMerged</a>
+					<a class="dropdown-item" href="https://nw520.github.io/WikiRsolve/" rel="nofollow noopener">WikiRsolve</a>
+				</div>
 			</li>
 			<li class="nav-item">
 				<a class="nav-link" href="#" data-toggle="modal" data-target="#modal-settings">Settings</a>
@@ -34,14 +32,14 @@
 		</ul>
 	</div>
 </nav>
-<div class="container">
+<main class="container">
 	<div id="rowTable">
 		<div class="row">
 			<textarea id="commands" class="form-control" rows="10"></textarea>
 		</div>
 		<br />
 		<div class="row">
-			<button id="button-parse" class="btn btn-primary" disabled>Parse</button>&nbsp;
+			<button id="button-parse" class="btn btn-primary" disabled>Go</button>&nbsp;
 			<div style="align-items:center;display:flex;margin-left:2em">
 				<p style="margin:0">Please enter one ID per line. The first one will be used as reference</p>
 			</div>
@@ -70,7 +68,15 @@
 			</div>
 		</div>
 	</div>
-</div>
+</main>
+<footer class="footer">
+	<div class="container text-right">
+		<span class="text-muted">
+			Tool made by <a href="https://nw520.de/" target="_blank" rel="nofollow noopener">nw520</a> <small>(<a href="https://www.wikidata.org/wiki/User:Nw520" target="_blank" rel="nofollow noopener">@ Wikidata</a>)</small>.<br/>
+			<a href="https://github.com/nw520/WikiCompare" target="_blank" rel="nofollow noopener">Source code @ GitHub</a> &bull; <a href="https://github.com/nw520/WikiCompare/issues" target="_blank" rel="nofollow noopener">Report bugs @ GitHub</a>
+		</span>
+	</div>
+</footer>
 
 <div class="modal fade" id="modal-settings" tabindex="-1" role="dialog" aria-labelledby="modal-settings-label" aria-hidden="true">
 	<div class="modal-dialog" role="document">
@@ -157,8 +163,10 @@
 	</div>
 </div>
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 <script src="data/components/tooltipster/4.0/js/tooltipster.bundle.min.js"></script>
+<script src="data/js/utils.js"></script>
+<script src="data/js/requestQueue.js"></script>
 <script src="data/js/script.js"></script>
 </body>
 </html>
