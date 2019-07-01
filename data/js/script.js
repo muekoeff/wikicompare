@@ -140,6 +140,14 @@ class Permalink {
 
 		return `${document.location.protocol}//${document.location.host}${document.location.pathname}?${parameters.join("&")}`;
 	}
+	static getFilteredProperties() {
+		var urlParams = new URLSearchParams(window.location.search);
+		if(urlParams.get("p") != null) {
+			return urlParams.get("p").split(",");
+		} else {
+			return null;
+		}
+	}
 	static initialize() {
 		$("#button-permalink").click(function(e) {
 			Permalink.uiShown();
@@ -440,7 +448,11 @@ function generateTable(elements) {
 
 			// Add property-rows on UI
 			properties = listProperties(e);
-			properties.forEach(function(property, i) {
+			var whitelist = Permalink.getFilteredProperties();
+			var whitelistedProperties = (whitelist == null ? properties : properties.filter(function(el) {
+				return whitelist.includes(el);
+			}));
+			whitelistedProperties.forEach(function(property, i) {
 				cells = "";
 				maxlength = 0;
 

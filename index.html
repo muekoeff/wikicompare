@@ -22,8 +22,8 @@
 			<li class="nav-item dropdown">
 				<a class="nav-link dropdown-toggle" href="#" id="navitem-tools" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">More Wikidata tools</a>
 				<div class="dropdown-menu" aria-labelledby="navitem-tools">
-					<a class="dropdown-item" href="https://nw520.github.io/WikiOSMerged/" rel="nofollow noopener">WikiOSMerged</a>
-					<a class="dropdown-item" href="https://nw520.github.io/WikiRsolve/" rel="nofollow noopener">WikiRsolve</a>
+					<a class="dropdown-item" href="https://muekoeff.github.io/wikiosmerged/" rel="noopener">WikiOSMerged</a>
+					<a class="dropdown-item" href="https://muekoeff.github.io/wikirsolve/" rel="noopener">WikiRsolve</a>
 				</div>
 			</li>
 			<li class="nav-item">
@@ -44,7 +44,10 @@
 				<p style="margin:0">Please enter one ID per line. The first one will be used as reference</p>
 			</div>
 			<div style="flex:1;text-align:right">
-				<a id="button-permalink" class="btn btn-secondary disabled" href="#" title="Create sharable permalink" data-toggle="modal" data-target="#modal-permalink">🔗</a>
+				<div class="btn-group" role="group">
+					<a id="button-permalink" class="btn btn-secondary disabled" href="#" title="Create sharable permalink" data-toggle="modal" data-target="#modal-permalink">🔗</a>
+					<a id="button-settings" class="btn btn-secondary" href="#" title="Open settings" data-toggle="modal" data-target="#modal-settings">⚙️</a>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -75,8 +78,8 @@
 <footer class="footer">
 	<div class="container text-right">
 		<span class="text-muted">
-			Tool made by <a href="https://nw520.de/" target="_blank" rel="nofollow noopener">nw520</a> <small>(<a href="https://www.wikidata.org/wiki/User:Nw520" target="_blank" rel="nofollow noopener">@ Wikidata</a>)</small>.<br/>
-			<a href="https://github.com/nw520/WikiCompare" target="_blank" rel="nofollow noopener">Source code @ GitHub</a> &bull; <a href="https://github.com/nw520/WikiCompare/issues" target="_blank" rel="nofollow noopener">Report bugs @ GitHub</a>
+			Tool made by <a href="https://muekev.de/" target="_blank" rel="noopener">nw520</a> <small>(<a href="https://www.wikidata.org/wiki/User:Nw520" target="_blank" rel="noopener">@ Wikidata</a>)</small>.<br/>
+			<a href="https://github.com/muekoeff/wikicompare" target="_blank" rel="noopener">Source code @ GitHub</a> &bull; <a href="https://github.com/muekoeff/wikicompare/issues" target="_blank" rel="noopener">Report bugs @ GitHub</a>
 		</span>
 	</div>
 </footer>
@@ -141,12 +144,12 @@
 					<label for="permalink-output">Sharable permalink</label>
 					<div style="display:flex">
 						<input id="permalink-output" class="form-control" type="text" readonly style="flex:1" />
-						<a id="button-permalink-open" class="btn btn-secondary" href="#"  style="margin-left:.25em">Open</a>
+						<a id="button-permalink-open" class="btn btn-primary" href="#"  style="margin-left:.25em">Open</a>
 					</div>
 				</div>
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
 			</div>
 		</div>
 	</div>
@@ -224,13 +227,15 @@
 								<input id="setting-ui-displaywdid" class="form-control" type="checkbox" />
 							</td>
 						</tr>
-						<datalist id="languages"></datalist>
 					</tbody>
 				</table>
+				<datalist id="languages"></datalist>
 			</div>
 			<div class="modal-footer">
-				<button id="button-settings-geturl" type="button" class="btn btn-secondary">Get URL</button>
-				<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+				<div class="btn-group" role="group">
+					<button id="button-settings-geturl" type="button" class="btn btn-primary">Get URL</button>
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+				</div>
 			</div>
 		</div>
 	</div>
