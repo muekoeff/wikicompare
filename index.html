@@ -38,10 +38,13 @@
 			<textarea id="commands" class="form-control" rows="10"></textarea>
 		</div>
 		<br />
-		<div class="row">
-			<button id="button-parse" class="btn btn-primary" disabled>Go</button>&nbsp;
+		<div class="row" style="display:flex">
+			<button id="button-parse" class="btn btn-primary" disabled>Go</button>
 			<div style="align-items:center;display:flex;margin-left:2em">
 				<p style="margin:0">Please enter one ID per line. The first one will be used as reference</p>
+			</div>
+			<div style="flex:1;text-align:right">
+				<a id="button-permalink" class="btn btn-secondary disabled" href="#" title="Create sharable permalink" data-toggle="modal" data-target="#modal-permalink">🔗</a>
 			</div>
 		</div>
 	</div>
@@ -78,6 +81,76 @@
 	</div>
 </footer>
 
+<div class="modal fade" id="modal-permalink" tabindex="-1" role="dialog" aria-labelledby="modal-permalink-label" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="modal-permalink-label">Create sharable permalink</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<table class="table table-settings" role="grid">
+					<tbody>
+						<tr>
+							<th scope="row" colspan="2"><label for="permalink-label">Display name</label></th>
+							<td colspan="2">
+								<input id="permalink-label" class="form-control" type="text" checked />
+							</td>
+						</tr>
+						<tr>
+							<th scope="row" colspan="2"><label for="permalink-includeditems">Include current items</label></th>
+							<td colspan="2">
+								<input id="permalink-includeditems" class="form-control" type="checkbox" checked />
+							</td>
+						</tr>
+						<tr>
+							<th scope="row" colspan="2"><label for="permalink-filterproperties">Filter displayed properties</label></th>
+							<td colspan="2">
+								<input id="permalink-filterproperties" class="form-control" type="checkbox" />
+							</td>
+						</tr>
+						<tr>
+							<th scope="row" colspan="2"><label for="permalink-displayedproperties">Displayed properties</label></th>
+							<td colspan="2">
+								<select id="permalink-displayedproperties" multiple></select>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row" colspan="2"><label for="permalink-queryonloaded">Load data as soon as page is loaded</label></th>
+							<td colspan="2">
+								<input id="permalink-queryonloaded" class="form-control" type="checkbox" />
+							</td>
+						</tr>
+						<tr>
+							<th scope="row" colspan="2"><label for="permalink-fullscreen">Activate fullscreen mode</label></th>
+							<td colspan="2">
+								<input id="permalink-fullscreen" class="form-control" type="checkbox" />
+							</td>
+						</tr>
+						<tr>
+							<th scope="row" colspan="2"><label for="permalink-settings">Apply current settings</label></th>
+							<td colspan="2">
+								<input id="permalink-settings" class="form-control" type="checkbox" />
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<div class="form-group">
+					<label for="permalink-output">Sharable permalink</label>
+					<div style="display:flex">
+						<input id="permalink-output" class="form-control" type="text" readonly style="flex:1" />
+						<a id="button-permalink-open" class="btn btn-secondary" href="#"  style="margin-left:.25em">Open</a>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+			</div>
+		</div>
+	</div>
+</div>
 <div class="modal fade" id="modal-settings" tabindex="-1" role="dialog" aria-labelledby="modal-settings-label" aria-hidden="true">
 	<div class="modal-dialog" role="document">
 		<div class="modal-content">

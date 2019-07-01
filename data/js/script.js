@@ -24,7 +24,7 @@ class LabelLoader {
 		} else {
 			if(typeof this.queue[wikidataId] == "undefined") this.queue[wikidataId] = [];
 			
-			this.queue[wikidataId].push(new LabelLoaderQueueItem(callbackSuccess, callbackError));
+			this.queue[wikidataId].push(new LabelLoader.QueueItem(callbackSuccess, callbackError));
 
 			if(this.queueRequesting.includes(wikidataId) && this.autoRequest) {
 				this._enqueueRequest(wikidataId);
@@ -109,10 +109,85 @@ class LabelLoader {
 		}
 	}
 }
-class LabelLoaderQueueItem {
+LabelLoader.QueueItem = class {
 	constructor(callbackSuccess, callbackError) {
 		this.callbackSuccess = callbackSuccess;
 		this.callbackError = callbackError;
+	}
+}
+class Permalink {
+	static generatePermalink() {
+		var parameters = [];
+
+		// Options
+		var label = $("#permalink-label").val();
+		var includedItems = $("#permalink-includeditems").prop("checked");
+		var filterProperties = $("#permalink-filterproperties").prop("checked");
+		var displayedProperties = [];
+		$("#permalink-displayedproperties").find(":checked").each(function(i, val) {
+			displayedProperties.push($(this).val());
+		});
+		var autoload = $("#permalink-queryonloaded").prop("checked");
+		var fullscreen = $("#permalink-fullscreen").prop("checked");
+		var settings = $("#permalink-settings").prop("checked");
+
+		if(label !== null) parameters.push(`l=${encodeURIComponent(label)}`);
+		if(includedItems) parameters.push(`i=${encodeURIComponent(elements.join(","))}`);
+		if(filterProperties) parameters.push(`p=${encodeURIComponent(displayedProperties.join(","))}`)
+		if(autoload) parameters.push("r");
+		if(fullscreen) parameters.push("f");
+		if(settings) parameters.push(`settings=${encodeURIComponent(Settings.export())}`);
+
+		return `${document.location.protocol}//${document.location.host}${document.location.pathname}?${parameters.join("&")}`;
+	}
+	static initialize() {
+		$("#button-permalink").click(function(e) {
+			Permalink.uiShown();
+		});
+		Permalink.load();
+	}
+	static load() {
+		var urlParams = new URLSearchParams(window.location.search);
+		if(urlParams.get("i") != null) {
+			$("#commands").val(urlParams.get("i").split(",").join("\n"));
+	
+			// Auto-execute?
+			if(urlParams.has("r")) {
+				$("#button-parse").click();
+	
+				if(urlParams.has("f")) {
+					$("#table-container").toggleClass("fullscreen");
+				}
+			}
+		}
+	}
+	static uiShown() {
+		$("#permalink-displayedproperties").empty();
+		$.each(properties, function(i, val) {
+			$("#permalink-displayedproperties").append(`<option selected>${val}</option>`);
+		});
+		$("#modal-permalink input, #modal-permalink select").on("change keyup paste", function(e) {
+			Permalink.uiUpdate();
+		});
+		Permalink.uiUpdate();
+	}
+	static uiUpdate() {
+		if($("#permalink-includeditems").prop("checked")) {
+			$("#permalink-queryonloaded").removeAttr("disabled")
+		} else {
+			$("#permalink-queryonloaded").attr("disabled", "disabled");
+		}
+		if($("#permalink-filterproperties").prop("checked")) {
+			$("#permalink-displayedproperties").removeAttr("disabled");
+		} else {
+			$("#permalink-displayedproperties").attr("disabled", "disabled");
+		}
+		Permalink.uiUpdateUrl();
+	}
+	static uiUpdateUrl() {
+		var permalink = Permalink.generatePermalink();
+		$("#button-permalink-open").attr("href", permalink);
+		$("#permalink-output").val(permalink);
 	}
 }
 class Settings {
@@ -159,36 +234,20 @@ class Settings {
 		if($(`style[data-setting='${name}']`).length == 0) $("head").append(`<style data-setting="${name}">${style}</style>`);
 	}
 	static export() {
-		if($("#button-settings-geturl").hasClass("mode-ready")) {
-			var settings = {
-				"language-label": $("#setting-language-label").val(),
-				"ui-collapsealiases": $("setting-ui-collapsealiases").prop("checked"),
-				"ui-collapsedescriptions": $("setting-ui-collapsedescriptions").prop("checked"),
-				"ui-collapsesitelinks": $("#setting-ui-collapsesitelinks").prop("checked"),
-				"ui-displayimages": $("#setting-ui-displayimages").prop("checked"),
-				"ui-displaylangalias": $("#setting-ui-displaylangalias").val(),
-				"ui-displaylangdescription": $("#setting-ui-displaylangdescription").val(),
-				"ui-displaywdid": $("#setting-ui-displaywdid").prop("checked"),
-				"ui-stickyheadercolumn": $("#setting-ui-stickyheadercolumn").prop("checked"),
-				"ui-stickyheaderrow": $("#setting-ui-stickyheaderrow").prop("checked"),
-				"ui-visitedlinks": $("#setting-ui-visitedlinks").prop("checked")
-			};
-			window.location.search = `?settings=${encodeURIComponent(JSON.stringify(settings))}`;
-		} else {
-			$("#button-settings-geturl").tooltipster({
-				content: "Clicking again on this button will redirect you to a new url which has your settings stored. This url can be bookmarked. However, your current entries in the input textbox will be gone once redirected.",
-				functionAfter: function() {
-					$("#button-settings-geturl").removeClass("mode-ready");
-				},
-				functionBefore: function() {
-					$("#button-settings-geturl").addClass("mode-ready");
-				},
-				side: "left",
-				theme: ["tooltipster-light", "tooltipster-error"],
-				timer: 10000,
-				trigger: "custom"
-			}).tooltipster("open");
-		}
+		var settings = {
+			"language-label": $("#setting-language-label").val(),
+			"ui-collapsealiases": $("setting-ui-collapsealiases").prop("checked"),
+			"ui-collapsedescriptions": $("setting-ui-collapsedescriptions").prop("checked"),
+			"ui-collapsesitelinks": $("#setting-ui-collapsesitelinks").prop("checked"),
+			"ui-displayimages": $("#setting-ui-displayimages").prop("checked"),
+			"ui-displaylangalias": $("#setting-ui-displaylangalias").val(),
+			"ui-displaylangdescription": $("#setting-ui-displaylangdescription").val(),
+			"ui-displaywdid": $("#setting-ui-displaywdid").prop("checked"),
+			"ui-stickyheadercolumn": $("#setting-ui-stickyheadercolumn").prop("checked"),
+			"ui-stickyheaderrow": $("#setting-ui-stickyheaderrow").prop("checked"),
+			"ui-visitedlinks": $("#setting-ui-visitedlinks").prop("checked")
+		};
+		return JSON.stringify(settings);
 	}
 	static getLanguage() {
 		return $("#setting-language-label").val().toLowerCase();
@@ -196,7 +255,23 @@ class Settings {
 	static initialize() {
 		$("#button-settings-geturl").click(function(e) {
 			e.preventDefault();
-			Settings.export();
+			if($("#button-settings-geturl").hasClass("mode-ready")) {
+				window.location.search = `?settings=${encodeURIComponent(Settings.export())}`;
+			} else {
+				$("#button-settings-geturl").tooltipster({
+					content: "Clicking again on this button will redirect you to a new url which has your settings stored. This url can be bookmarked. However, your current entries in the input textbox will be gone once redirected.",
+					functionAfter: function() {
+						$("#button-settings-geturl").removeClass("mode-ready");
+					},
+					functionBefore: function() {
+						$("#button-settings-geturl").addClass("mode-ready");
+					},
+					side: "left",
+					theme: ["tooltipster-light", "tooltipster-error"],
+					timer: 10000,
+					trigger: "custom"
+				}).tooltipster("open");
+			}
 		});
 
 		Settings.loadLanguages();
@@ -244,6 +319,7 @@ class Ui {
 	}
 }
 var elements;
+var properties;
 var queue = new RequestQueue();
 var labelLoader = new LabelLoader(queue);
 
@@ -289,21 +365,7 @@ jQuery(document).ready(function($) {
 	});
 
 	Settings.initialize();
-
-	// Load query parameters
-	var urlParams = new URLSearchParams(window.location.search);
-	if(urlParams.get("i") != null) {
-		$("#commands").val(urlParams.get("i").split(",").join("\n"));
-
-		// Auto-execute?
-		if(urlParams.has("r")) {
-			$("#button-parse").click();
-
-			if(urlParams.has("f")) {
-				$("#table-container").toggleClass("fullscreen");;
-			}
-		}
-	}
+	Permalink.initialize();
 });
 
 function generateTable(elements) {
@@ -377,8 +439,8 @@ function generateTable(elements) {
 			$("#table-output tbody").append(generateRow("Sitelinks", null, cells, maxlength, null, $("#setting-ui-collapsesitelinks")[0].checked));
 
 			// Add property-rows on UI
-			var allProperties = listProperties(e);
-			allProperties.forEach(function(property, i) {
+			properties = listProperties(e);
+			properties.forEach(function(property, i) {
 				cells = "";
 				maxlength = 0;
 
@@ -415,6 +477,9 @@ function generateTable(elements) {
 			});
 			updateProperties(allProperties);
 			labelLoader.startWork();
+
+			// Enable permalink-button
+			$("#button-permalink").removeClass("disabled");
 		} else {
 			console.warn("No results");
 		}

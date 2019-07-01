@@ -43,6 +43,12 @@ html.stickyfooter {
 .stickyfooter main {
 	flex: 1;
 }
+.table-settings select {
+	width: 100%;
+}
+.table-settings td:nth-child(2n) {
+	text-align: right;
+}
 .tooltipster-sidetip.tooltipster-error.tooltipster-left .tooltipster-arrow-background {
 	border-left-color: #f8d7da !important;
 }

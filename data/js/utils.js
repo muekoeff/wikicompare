@@ -28,11 +28,13 @@ class Utils {
 
 		try {
 			document.execCommand('copy');
+			document.body.removeChild(textArea);
+			return true;
 		} catch(e) {
 			console.error(e);
+			document.body.removeChild(textArea);
+			return false;
 		}
-
-		document.body.removeChild(textArea);
 	}
 	static validateNumber(i, fallback) {
 		return (isNaN(i) ? fallback : i);
