@@ -1,2 +1,2 @@
 # WikiCompare
-This project is work in progress!
+WikiCompare has moved to [GitLab](https://gitlab.com/muekoeff/entitycompare/)
